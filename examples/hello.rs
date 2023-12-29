@@ -12,12 +12,14 @@ use std::sync::Arc;
 
 #[apply(smol_macros::main!)]
 async fn main(ex: &Arc<smol_macros::Executor<'_>>) -> io::Result<()> {
-    // build our application with a route
+    // Build our application with a route.
     let app = Router::new().route("/", get(handler));
 
-    // run it
+    // Create a `smol`-based TCP listener.
     let listener = Async::<TcpListener>::bind(([127, 0, 0, 1], 3000)).unwrap();
     println!("listening on {}", listener.get_ref().local_addr().unwrap());
+
+    // Run it using `smol_axum`
     smol_axum::serve(ex.clone(), listener, app).await
 }
 
