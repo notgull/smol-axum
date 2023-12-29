@@ -3,6 +3,14 @@ name = "smol-axum"
 version = "0.1.0"
 edition = "2021"
 authors = ["John Nunley <dev@notgull.net>"]
+rust-version = "1.66"
+license = "MIT OR Apache-2.0"
+repository = "https://codeberg.org/notgull/smol-axum"
+homepage = "https://codeberg.org/notgull/smol-axum"
+description = "Integrations between `smol` and `axum`"
+keywords = ["futures", "concurrency", "http"]
+categories = ["asynchronous", "concurrency"]
+exclude = ["/.*"]
 
 [dependencies]
 async-executor = "1.8.0"
