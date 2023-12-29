@@ -98,21 +98,20 @@ impl Incoming for async_net::TcpListener {
 }
 
 /// Serve a future using [`smol`]'s TCP listener.
-pub async fn serve<'ex, I, M, S>(
+pub async fn serve<'ex, I, S>(
     executor: impl Borrow<Executor<'ex>> + Clone + Send + 'ex,
     tcp_listener: I,
-    mut make_service: M,
+    service: S,
 ) -> io::Result<()>
 where
     I: Incoming + 'static,
     I::Connection: Send + Unpin,
-    M: for<'a> Service<IncomingStream<'a, I>, Response = S, Error = Infallible>,
     S: Service<Request, Response = Response, Error = Infallible> + Clone + Send + 'static,
     S::Future: Send,
 {
     loop {
         // Wait for a new connection.
-        let (tcp_stream, remote_addr) = match tcp_listener.accept().await? {
+        let (tcp_stream, _remote_addr) = match tcp_listener.accept().await? {
             Some(conn) => conn,
             None => break,
         };
@@ -121,22 +120,13 @@ where
         let tcp_stream = FuturesIo::new(tcp_stream);
 
         // Wait for the service to be ready.
-        poll_fn(|cx| make_service.poll_ready(cx))
+        let mut service = service.clone();
+        poll_fn(|cx| service.poll_ready(cx))
             .await
             .unwrap_or_else(|e| match e {});
 
         // Create a service.
-        let service = {
-            let service = make_service
-                .call(IncomingStream {
-                    _stream: &tcp_stream,
-                    remote_addr,
-                })
-                .await
-                .unwrap_or_else(|err| match err {});
-
-            TowerToHyperService { service }
-        };
+        let service = { TowerToHyperService { service } };
 
         // Spawn the service on our executor.
         let task = executor.borrow().spawn({
@@ -146,7 +136,7 @@ where
                 builder.http1().timer(SmolTimer::new());
                 builder.http2().timer(SmolTimer::new());
 
-                if let Err(err) = builder 
+                if let Err(err) = builder
                     .serve_connection_with_upgrades(tcp_stream, service)
                     .await
                 {
