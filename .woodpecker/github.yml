@@ -2,6 +2,12 @@ when:
 - event: push
   branch: main
 
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      partial: false
+
 steps:
   github_mirror:
     image: alpine:latest
