@@ -1,5 +1,7 @@
 when:
+- event: push
   branch: main
+- event: pull_request
   
 steps:
   fmt:

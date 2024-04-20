@@ -1,7 +1,6 @@
 when:
 - event: cron
   cron: renovate
-- event: manual
 
 steps:
   renovate:
