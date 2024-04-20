@@ -16,3 +16,5 @@ steps:
     secrets:
       - source: renovate_pat
         target: renovate_token
+      - source: renovate_github
+        target: github_com_token

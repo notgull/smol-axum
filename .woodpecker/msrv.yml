@@ -1,7 +1,5 @@
 when:
-- event: push
   branch: main
-- event: pull_request
 
 matrix:
   RUST_VERSION:
