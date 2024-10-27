@@ -712,7 +712,6 @@ dependencies = [
  "pin-project-lite",
  "smol-hyper",
  "smol-macros",
- "tower",
  "tower-service",
  "tracing",
 ]

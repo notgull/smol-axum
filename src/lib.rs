@@ -46,7 +46,6 @@ use hyper::body::Incoming as HyperIncoming;
 use hyper_util::server::conn::auto::Builder;
 use pin_project_lite::pin_project;
 use smol_hyper::rt::{FuturesIo, SmolExecutor, SmolTimer};
-use tower::util::{Oneshot, ServiceExt};
 use tower_service::Service;
 
 use axum_core::body::Body;
@@ -55,6 +54,7 @@ use axum_core::response::Response;
 
 use futures_lite::future::poll_fn;
 use futures_lite::io::{AsyncRead, AsyncWrite};
+use futures_lite::ready;
 
 use std::borrow::Borrow;
 use std::convert::Infallible;
@@ -200,35 +200,64 @@ where
 {
     type Response = S::Response;
     type Error = S::Error;
-    type Future = TowerToHyperServiceFuture<S, Request>;
+    type Future = Oneshot<S, Request>;
 
     fn call(&self, req: Request<HyperIncoming>) -> Self::Future {
         let req = req.map(Body::new);
-        TowerToHyperServiceFuture {
-            future: self.service.clone().oneshot(req),
+        Oneshot::NotReady {
+            svc: self.service.clone(),
+            req: Some(req),
         }
     }
 }
 
+// Poll a `tower` service with a request as a future to completion.
 pin_project! {
-    struct TowerToHyperServiceFuture<S, R>
+    #[project = OneshotProj]
+    enum Oneshot<S, R>
     where
         S: tower_service::Service<R>,
     {
-        #[pin]
-        future: Oneshot<S, R>,
+        // We are not yet ready.
+        NotReady {
+            svc: S,
+            req: Option<R>
+        },
+        // We have been called and are processing the request.
+        Called {
+            #[pin]
+            fut: S::Future,
+        },
+        // We are done.
+        Done
     }
 }
 
-impl<S, R> Future for TowerToHyperServiceFuture<S, R>
+impl<S, R> Future for Oneshot<S, R>
 where
     S: tower_service::Service<R>,
 {
     type Output = Result<S::Response, S::Error>;
 
     #[inline]
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.project().future.poll(cx)
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        loop {
+            match self.as_mut().project() {
+                OneshotProj::NotReady { svc, req } => {
+                    ready!(svc.poll_ready(cx))?;
+                    let fut = svc.call(req.take().expect("already called"));
+                    self.as_mut().set(Oneshot::Called { fut });
+                }
+
+                OneshotProj::Called { fut } => {
+                    let res = ready!(fut.poll(cx))?;
+                    self.as_mut().set(Oneshot::Done);
+                    return Poll::Ready(Ok(res));
+                }
+
+                OneshotProj::Done => panic!("future polled after completion"),
+            }
+        }
     }
 }
 
