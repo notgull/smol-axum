@@ -79,7 +79,10 @@ pub trait Incoming {
 }
 
 impl<'this, T: Incoming + ?Sized> Incoming for &'this T {
-    type Accept<'a> = T::Accept<'a> where 'this: 'a;
+    type Accept<'a>
+        = T::Accept<'a>
+    where
+        'this: 'a;
     type Connection = T::Connection;
 
     #[inline]
@@ -89,7 +92,10 @@ impl<'this, T: Incoming + ?Sized> Incoming for &'this T {
 }
 
 impl<'this, T: Incoming + ?Sized> Incoming for &'this mut T {
-    type Accept<'a> = T::Accept<'a> where 'this: 'a;
+    type Accept<'a>
+        = T::Accept<'a>
+    where
+        'this: 'a;
     type Connection = T::Connection;
 
     #[inline]
@@ -99,7 +105,10 @@ impl<'this, T: Incoming + ?Sized> Incoming for &'this mut T {
 }
 
 impl<T: Incoming + ?Sized> Incoming for Box<T> {
-    type Accept<'a> = T::Accept<'a> where T: 'a;
+    type Accept<'a>
+        = T::Accept<'a>
+    where
+        T: 'a;
     type Connection = T::Connection;
 
     #[inline]
