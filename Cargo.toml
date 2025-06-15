@@ -1,6 +1,6 @@
 [package]
 name = "smol-axum"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["John Nunley <dev@notgull.net>"]
 rust-version = "1.75"
