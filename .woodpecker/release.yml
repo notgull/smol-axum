@@ -1,18 +1,25 @@
 when:
-  - event: tag
-    ref: refs/tags/v*
+    - event: tag
+      ref: refs/tags/v*
+
+labels:
+    platform: linux/amd64
+    backend: docker
 
 steps:
-  create_release:
-    image: alpine:latest
-    secrets: [ codeberg_config, codeberg_ssh_key ]
-    commands:
-      - apk --no-cache update -q 
-      - apk --no-cache add curl git tea
-      - curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "$PARSE_CHANGELOG" | tar -xvzf - -C /usr/bin/
-      - chmod +x /usr/bin/parse-changelog
-      - mkdir -p /tmp/.ssh && echo "$CODEBERG_SSH_KEY" > /tmp/.ssh/id_rsa
-      - mkdir -p $HOME/.config/tea && echo "$CODEBERG_CONFIG" > $HOME/.config/tea/config.yml
-      - tea release create --tag "$(git describe --tags)" --title "$(git describe --tags)" -n "$(/usr/bin/parse-changelog CHANGELOG.md)"
-    environment:
-      PARSE_CHANGELOG: https://github.com/taiki-e/parse-changelog/releases/download/v0.6.4/parse-changelog-x86_64-unknown-linux-musl.tar.gz
+    create_release:
+        image: alpine:latest
+        commands:
+            - apk --no-cache update -q
+            - apk --no-cache add curl git tea
+            - curl --proto '=https' --tlsv1.2 -fsSL --retry 10 "$PARSE_CHANGELOG" | tar -xvzf - -C /usr/bin/
+            - chmod +x /usr/bin/parse-changelog
+            - mkdir -p /tmp/.ssh && echo "$CODEBERG_SSH_KEY" > /tmp/.ssh/id_rsa
+            - mkdir -p $HOME/.config/tea && echo "$CODEBERG_CONFIG" > $HOME/.config/tea/config.yml
+            - tea release create --tag "$(git describe --tags)" --title "$(git describe --tags)" -n "$(/usr/bin/parse-changelog CHANGELOG.md)"
+        environment:
+            PARSE_CHANGELOG: https://github.com/taiki-e/parse-changelog/releases/download/v0.6.4/parse-changelog-x86_64-unknown-linux-musl.tar.gz
+            CODEBERG_CONFIG:
+                from_secret: codeberg_config
+            CODEBERG_SSH_KEY:
+                from_secret: codeberg_ssh_key

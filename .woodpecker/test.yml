@@ -1,28 +1,32 @@
 when:
-  branch: main
+    branch: main
+
+labels:
+    platform: linux/amd64
+    backend: docker
 
 matrix:
-  RUST_VERSION:
-    - stable
-    - beta
-    - nightly
+    RUST_VERSION:
+        - stable
+        - beta
+        - nightly
 
 steps:
-  test:
-    image: rust
-    commands:
-      - rustup default ${RUST_VERSION}
-      - cargo build --all --all-features --all-targets
-      - if [ ${RUST_VERSION} = "nightly" ]; then cargo check -Z features=dev_dep; fi
-      - cargo test
-      - cargo test --no-default-features --features http1 --tests
-      - cargo test --no-default-features --features http2 --tests
-    environment:
-      CARGO_INCREMENTAL: "0"
-      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-      CARGO_NET_RETRY: "10"
-      CARGO_TERM_COLOR: always
-      RUST_BACKTRACE: "1"
-      RUSTFLAGS: "-D warnings"
-      RUSTDOCFLAGS: "-D warnings"
-      RUSTUP_MAX_RETRIES: "10"
+    test:
+        image: rust
+        commands:
+            - rustup default ${RUST_VERSION}
+            - cargo build --all --all-features --all-targets
+            - if [ ${RUST_VERSION} = "nightly" ]; then cargo check -Z features=dev_dep; fi
+            - cargo test
+            - cargo test --no-default-features --features http1 --tests
+            - cargo test --no-default-features --features http2 --tests
+        environment:
+            CARGO_INCREMENTAL: "0"
+            CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+            CARGO_NET_RETRY: "10"
+            CARGO_TERM_COLOR: always
+            RUST_BACKTRACE: "1"
+            RUSTFLAGS: "-D warnings"
+            RUSTDOCFLAGS: "-D warnings"
+            RUSTUP_MAX_RETRIES: "10"

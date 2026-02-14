@@ -1,24 +1,28 @@
 when:
-  branch: main
+    branch: main
+
+labels:
+    platform: linux/amd64
+    backend: docker
 
 matrix:
-  RUST_VERSION:
-   - "1.75.0"
+    RUST_VERSION:
+        - "1.75.0"
 
 steps:
-  msrv:
-    image: rust
-    commands:
-     - rustup default ${RUST_VERSION}
-     - cargo build
-     - cargo build --no-default-features --features http1
-     - cargo build --no-default-features --features http2
-    environment:
-      CARGO_INCREMENTAL: "0"
-      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-      CARGO_NET_RETRY: "10"
-      CARGO_TERM_COLOR: always
-      RUST_BACKTRACE: "1"
-      RUSTFLAGS: "-D warnings"
-      RUSTDOCFLAGS: "-D warnings"
-      RUSTUP_MAX_RETRIES: "10" 
+    msrv:
+        image: rust
+        commands:
+            - rustup default ${RUST_VERSION}
+            - cargo build
+            - cargo build --no-default-features --features http1
+            - cargo build --no-default-features --features http2
+        environment:
+            CARGO_INCREMENTAL: "0"
+            CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+            CARGO_NET_RETRY: "10"
+            CARGO_TERM_COLOR: always
+            RUST_BACKTRACE: "1"
+            RUSTFLAGS: "-D warnings"
+            RUSTDOCFLAGS: "-D warnings"
+            RUSTUP_MAX_RETRIES: "10"
