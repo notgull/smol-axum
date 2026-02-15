@@ -144,7 +144,7 @@ impl Incoming for async_net::TcpListener {
 
 /// Serve a future using [`smol`]'s TCP listener.
 pub async fn serve<'ex, I, S>(
-    executor: impl Borrow<Executor<'ex>> + Clone + Send + 'ex,
+    executor: impl Borrow<Executor<'ex>> + Clone + Send + Sync + 'ex,
     tcp_listener: I,
     service: S,
 ) -> io::Result<()>
@@ -176,8 +176,12 @@ where
         // Spawn the service on our executor.
         let task = executor.borrow().spawn({
             let executor = executor.clone();
+
             async move {
-                let mut builder = Builder::new(SmolExecutor::new(AsRefExecutor(executor.borrow())));
+                let mut builder = Builder::new(SmolExecutor::new(AsRefExecutor {
+                    executor,
+                    _marker: std::marker::PhantomData,
+                }));
                 builder.http1().timer(SmolTimer::new());
                 builder.http2().timer(SmolTimer::new());
 
@@ -271,11 +275,17 @@ where
 }
 
 #[derive(Clone)]
-struct AsRefExecutor<'this, 'ex>(&'this Executor<'ex>);
+struct AsRefExecutor<'ex, T> {
+    executor: T,
+    _marker: std::marker::PhantomData<Executor<'ex>>,
+}
 
-impl<'ex> AsRef<Executor<'ex>> for AsRefExecutor<'_, 'ex> {
+impl<'ex, T> AsRef<Executor<'ex>> for AsRefExecutor<'ex, T>
+where
+    T: Borrow<Executor<'ex>>,
+{
     #[inline]
     fn as_ref(&self) -> &Executor<'ex> {
-        self.0
+        self.executor.borrow()
     }
 }
